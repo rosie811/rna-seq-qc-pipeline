@@ -1,0 +1,111 @@
+---
+title: "RNA-seq QC and Unsupervised Analysis Report"
+output: html_document
+---
+
+# Overview
+
+This report demonstrates a modular RNA-seq-style analysis pipeline
+implemented in R. Simulated gene expression data are generated,
+missingness is introduced, normalization is applied, and quality
+control metrics are computed prior to exploratory dimensionality
+reduction and clustering.
+
+The goal is to demonstrate foundational bioinformatics data
+processing and unsupervised analysis workflows.
+
+## Setup
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+
+source("../scripts/simulate_data.R")
+source("../scripts/preprocessing.R")
+source("../scripts/qc_analysis.R")
+source("../scripts/dim_reduction.R")
+source("../scripts/run_pipeline.R")
+
+```
+
+---
+
+# Running the Pipeline
+
+```{r}
+res <- run_pipeline(
+  num_genes = 2000,
+  num_samples = 30,
+  missing_frac = 0.1,
+  seed = 1,
+  k = 3
+)
+
+```
+
+---
+
+# Overview of Simulated Data
+
+Gene expression values were simulated from a log-normal distribution and 10% missingness was introduced at random.
+
+```{r}
+summary(res$expr_norm)
+
+```
+
+---
+
+# QC Metrics
+
+```{r}
+head(res$sample_qc)
+summary(res$sample_qc$missing_frac)
+
+```
+
+Missingness is centered around 10%, consistent with the simulation design.
+Detection rates per sample are approximately 90%, suggesting uniform data
+quality across samples. No samples exhibit extreme missingness or markedly
+reduced detection rates, indicating that downstream dimensionality
+reduction is unlikely to be driven by technical artifacts.
+
+---
+
+# PCA Results
+
+```{r}
+summary(res$pca)
+
+plot_pca(res$pca)
+
+```
+
+The first two principal components explain X% and Y% of total variance,
+respectively. These components represent the dominant axes of variation
+across samples. Visual inspection of the PCA plot does not reveal extreme
+outliers or clear separation patterns, which is expected given the
+randomly simulated data.
+
+---
+
+# k-means Clustering
+
+```{r}
+res$kmeans$cluster
+
+plot_kmeans_on_pca(res$pca, res$kmeans)
+
+```
+
+k-means clustering partitions samples into three groups based on similarity in principal component space. Given the simulated nature of the data without embedded biological structure, clusters reflect random structure rather than meaningful biological grouping.
+
+---
+
+# Potential Next Steps
+
+- Model biologically realistic dropout by increasing missingness probability
+  for low-expression genes.
+- Implement additional outlier detection metrics, such as sample correlation
+  thresholds or variance-based filtering.
+- Incorporate gene filtering prior to PCA to remove low-detection genes.
+- Compare clustering performed directly on normalized data versus PCA-reduced space.
